@@ -112,6 +112,7 @@ telegraf_plugins_extra:
 # Custom pip installer
 pip_venv_path: "{{ galaxy_venv_dir }}"
 pip_install_dependencies:
+  - rspace-client==2.6.1  # RSpace support for Galaxy (workaround for issue https://github.com/galaxyproject/galaxy/issues/20483, remove when fixed)
   # celery and flower
   - redis
   - flower
@@ -205,6 +206,7 @@ nginx_conf_http:
     image/png
     image/svg+xml
     image/x-icon
+    application/zip
   gzip_buffers: "16 8k"
   gzip_min_length: 128
 nginx_enable_default_server: false
@@ -349,7 +351,7 @@ galaxy_instance_hostname: usegalaxy.eu
 galaxy_config_style: yaml
 
 galaxy_repo: "https://github.com/usegalaxy-eu/galaxy.git"
-galaxy_commit_id: "release_24.2_europe"
+galaxy_commit_id: "release_25.0_europe"
 galaxy_force_checkout: true # discard any modified files
 #galaxy_admin_email_from: 'noreply@usegalaxy.eu'
 
@@ -426,8 +428,8 @@ galaxy_config_templates:
     dest: "{{ galaxy_server_dir }}/lib/galaxy/tool_util/toolbox/filters/global_host_filters.py"
   - src: "{{ galaxy_config_template_src_dir }}/config/job_conf.yml.j2"
     dest: "{{ galaxy_config_dir }}/job_conf.yml"
-  - src: "{{ galaxy_config_template_src_dir }}/config/container_resolvers_conf.xml.j2"
-    dest: "{{ galaxy_config_dir }}/container_resolvers_conf.xml"
+  - src: "{{ galaxy_config_template_src_dir }}/config/container_resolvers_conf.yml.j2"
+    dest: "{{ galaxy_config_dir }}/container_resolvers_conf.yml"
   - src: "{{ galaxy_config_template_src_dir }}/config/user_filters.py.j2"
     dest: "{{ galaxy_server_dir }}/lib/galaxy/tool_util/toolbox/filters/user_filters.py"
   - src: "{{ galaxy_config_template_src_dir }}/config/nagios_tool_conf.xml"

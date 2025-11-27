@@ -69,7 +69,7 @@ postgresql_conf:
 #  - shared_preload_libraries: "'pg_stat_statements'"
 #  - log_line_prefix: "'%t:%r:%u@%d:[%p]<%m>: '"
   - log_checkpoints: "on"
-  - log_min_duration_statement: 500
+  - log_min_duration_statement: 1500
   - track_activity_query_size: 4096
 postgresql_pg_hba_conf:
   - "host    postgres        galaxy          132.230.223.239/32      md5"
@@ -102,4 +102,10 @@ postgresql_pg_hba_conf:
   - "host    grafana         grafana         132.230.224.112/32      md5"
   - "host    grafana         grafana         132.230.223.239/32      md5"
   - "host    grafana         grafana         10.5.67.211/32          md5"
+  - "host    galaxy          galaxy          10.4.68.201/32          md5"
+  - "host    postgres        galaxy          10.4.68.201/32          md5"
+  - "host    galaxy          galaxy-readonly 10.4.68.201/32          md5"
+  - "host    tiaas           tiaas           10.4.68.201/32          md5"
+  - "host    gxitproxy       galaxy          10.4.68.201/32          md5"
+
 postgresql_pgdump_dir: "/var/lib/pgsql/pgdump3"

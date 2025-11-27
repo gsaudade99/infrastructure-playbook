@@ -1,6 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <toolbox monitor="true">
   <section id="get_data" name="Get Data">
+    <tool file="data_source/diced.xml" />
     <tool file="data_source/upload.xml" />
     <tool file="/opt/galaxy/custom-tools/test/seek.xml" labels="beta" />
     <tool file="data_source/ucsc_tablebrowser.xml" />
@@ -17,7 +18,6 @@
     <tool file="data_source/cbi_rice_mart.xml" />
     <tool file="data_source/gramene_mart.xml" />
     <tool file="data_source/dorina_galaxy.xml" />
-    <tool file="data_source/fairdomhub.xml" />
     <tool file="data_source/fly_modencode.xml" />
     <tool file="data_source/intermine.xml" />
     <tool file="data_source/flymine.xml" />
@@ -43,8 +43,13 @@
     <tool file="${model_tools_path}/unzip_collection.xml" />
     <tool file="${model_tools_path}/zip_collection.xml" />
     <tool file="${model_tools_path}/filter_failed_collection.xml" />
+    <tool file="${model_tools_path}/filter_failed_collection_1.1.0.xml" />
     <tool file="${model_tools_path}/filter_empty_collection.xml" />
+    <tool file="${model_tools_path}/filter_empty_collection_1.1.0.xml" />
     <tool file="${model_tools_path}/filter_null.xml" />
+    <tool file="${model_tools_path}/filter_null_1.1.0.xml" />
+    <tool file="${model_tools_path}/keep_success_collection.xml" />
+    <tool file="${model_tools_path}/keep_success_collection_1.1.0.xml" />
     <tool file="${model_tools_path}/flatten_collection.xml" />
     <tool file="${model_tools_path}/merge_collection.xml" />
     <tool file="${model_tools_path}/relabel_from_file.xml" />
@@ -99,7 +104,7 @@
   <section id="filter_and_sort" name="Filter and Sort">
     <tool file="stats/filtering_1_1_0.xml" />
     <tool file="stats/filtering.xml" />
-    <tool file="filters/sorter.xml" />
+    <tool file="filters/sorter.xml" hidden="True" />
     <tool file="filters/grep.xml" />
     <tool file="filters/grep_1.0.1.xml"/>
     <label id="gff" text="GFF" />
@@ -434,6 +439,12 @@
     <tool file="meme/fimo.xml" hidden="True" />
     </section>
   <section id="test_tools" name="Test Tools">
+    <tool file="/opt/galaxy/custom-tools/test/3dtrees/overviews.xml" />
+    <tool file="/opt/galaxy/custom-tools/test/3dtrees/tile_merge.xml" />
+    <tool file="/opt/galaxy/custom-tools/test/3dtrees/standard.xml" />
+    <tool file="/opt/galaxy/custom-tools/test/3dtrees/detailview.xml" />
+    <tool file="/opt/galaxy/custom-tools/test/3dtrees/sat.xml" />
+
     <tool file="/opt/galaxy/custom-tools/test/zarr/xarray_netcdf2zarr.xml" />
     <tool file="/opt/galaxy/custom-tools/test/interactivetool_zeppelin.xml" labels="alpha" />
     <tool file="/data/db/galaxy_user_data/climate_science/icenet/icenet_concatenate.xml" labels="alpha" />
@@ -553,18 +564,22 @@
   <section id="species_abundance" name="Species abundance" />
   <section id="compute_indicators_for_turnover_boulders_fields" name="Compute indicators for turnover boulders fields" />
   <section id="ecoregionalization" name="Ecoregionalization" />
+  <section id="phylodiversity" name="Phylodiversity" />
   <section id="geom_mean" name="Indicators from geometric mean" />
   <section id="astronomy" name="Astronomy" />
   <section id="interactivetools" name="Interactive tools">
         <tool file="interactive/interactivetool_source.xml" />
-        <tool file="interactive/interactivetool_cellxgene_mouse_sciatic_nerve.xml" hidden="True" />
+        <tool file="interactive/interactivetool_cellxgene_mouse_sciatic_nerve.xml"/>
         <tool file="interactive/interactivetool_napari.xml" />
+        <tool file="interactive/interactivetool_anylabeling.xml" />
+        <tool file="interactive/interactivetool_pretextview.xml" />
         <tool file="interactive/interactivetool_bellavista.xml" />
         <tool file="interactive/interactivetool_cellprofiler.xml" />
         <tool file="interactive/interactivetool_tadviewer.xml" />
         <tool file="interactive/interactivetool_qgis.xml" />
         <tool file="interactive/interactivetool_escriptorium.xml" />
         <tool file="interactive/interactivetool_qupath.xml" />
+        <tool file="interactive/interactivetool_qupath_0.6.0.xml" />
         <tool file="interactive/interactivetool_pampa.xml" />
         <tool file="interactive/interactivetool_odv.xml" labels="ocean" />
         <tool file="interactive/terriamap/interactivetool_terriamap.xml" labels="ocean" />
@@ -592,6 +607,7 @@
         <tool file="interactive/interactivetool_pangeo_ml_notebook.xml" />
         <tool file="interactive/interactivetool_cellpose.xml" />
         <tool file="interactive/interactivetool_rstudio.xml" />
+        <tool file="interactive/interactivetool_rstudio_bioc_3.20.xml" />
         <tool file="interactive/interactivetool_rstudio_0_3.xml" />
         <tool file="interactive/interactivetool_pyiron.xml" />
         <tool file="interactive/interactivetool_higlass.xml" />
@@ -640,43 +656,39 @@
   </section>
 
 <!-- Earth-system subdomain -->
-  <label id="earth-system-label-interactive-tools" text="General interactive tools" />
-  <section id="earth-system-section-interactivetools" name="Interactive tools">
-    <tool file="interactive/interactivetool_jupyter_notebook.xml" />
-    <tool file="interactive/interactivetool_jupyter_notebook_1.0.0.xml" />
-    <tool file="interactive/interactivetool_rstudio.xml" />
-    <tool file="interactive/interactivetool_rstudio_0_3.xml" />
-    <tool file="interactive/interactivetool_climate_notebook.xml" />
-    <tool file="interactive/interactivetool_pangeo_notebook.xml" />
-    <tool file="interactive/interactivetool_pangeo_ml_notebook.xml" />
-    <tool file="interactive/interactivetool_holoviz.xml" />
-    <tool file="interactive/interactivetool_copernicus.xml" />
-    <tool file="interactive/interactivetool_panoply.xml" />
-    <tool file="interactive/interactivetool_stac.xml" />
-    <tool file="interactive/terriamap/interactivetool_terriamap.xml" labels="ocean" />
-  </section>
-  <label id="earth-system-label-dynamics" text="Earth and Environmental dynamics" />
-  <section id="earth-system-section-watercoastal" name="Water Coastal Dynamics">
+  <label id="earth-system-label-interactive-tools" text="Interactive tools" />
+  <section id="earth-system-section-ocean" name="Ocean">
     <tool file="interactive/interactivetool_divand.xml" />
     <tool file="interactive/interactivetool_source.xml" />
     <tool file="interactive/interactivetool_odv.xml" />
     <tool file="interactive/interactivetool_odv_5_8.xml" />
+	<tool file="interactive/interactivetool_scoop3.xml" />
   </section>
-  <section id="earth-system-section-earthcritical" name="Earth Critical Zone">
+  <section id="earth-system-section-atmosphere" name="Atmosphere">
+    <tool file="interactive/interactivetool_panoply.xml" />
+	<tool file="interactive/interactivetool_hdfview.xml" />
+  </section>
+  <section id="earth-system-section-land" name="Land &amp; Soil">
     <tool file="interactive/interactivetool_qgis.xml" />
     <tool file="interactive/interactivetool_qgis3_34.xml" />
+    <tool file="interactive/interactivetool_jupytergis_notebook.xml" />
   </section>
-  <section id="earth-system-section-volcano" name="Volcano">
-    <tool file="interactive/interactivetool_hdfview.xml" />
-  </section>
-  <label id="earth-system-label-biogeo" text="Environmental Bio-geochemical assets" />
-  <section id="earth-system-section-biogeo" name="Bio-geochemical">
-    <tool file="interactive/interactivetool_scoop3.xml" />
-  </section>
-  <label id="earth-system-label-biodiv" text="Biodiversity observation" />
-  <section id="earth-system-section-marineomics" name="Marine Omics">
+  <section id="earth-system-section-biosphere" name="Biosphere">
     <tool file="interactive/interactivetool_pampa.xml" />
     <tool file="interactive/interactivetool_mgnify_notebook.xml" />
     <tool file="interactive/interactivetool_mgnify_notebook_1.2.2.xml" />
+  </section>
+  <section id="earth-system-section-general" name="General">
+    <tool file="interactive/interactivetool_jupyter_notebook.xml" />
+    <tool file="interactive/interactivetool_jupyter_notebook_1.0.0.xml" />
+    <tool file="interactive/interactivetool_rstudio.xml" />
+    <tool file="interactive/interactivetool_rstudio_0_3.xml" />
+    <tool file="interactive/interactivetool_pangeo_notebook.xml" />
+    <tool file="interactive/interactivetool_pangeo_ml_notebook.xml" />
+    <tool file="interactive/interactivetool_holoviz.xml" />
+    <tool file="interactive/interactivetool_copernicus.xml" />
+    <tool file="interactive/interactivetool_stac.xml" />
+	<tool file="interactive/interactivetool_geoexplorer.xml" />
+    <tool file="interactive/terriamap/interactivetool_terriamap.xml" labels="earth-system" />
   </section>
 </toolbox>
