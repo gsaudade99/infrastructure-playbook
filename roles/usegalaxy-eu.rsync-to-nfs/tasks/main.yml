@@ -20,17 +20,16 @@
                   --exclude "*.sock" \
                   --exclude "tool_search_index/" \
                   --exclude "server/static-*/" \
-                  --exclude "biotools/" \
                   --exclude "test-data/" \
                 $dir/ {{ galaxy_nfs_location }}/$dir/
             else
                 echo "Skipping $dir"
             fi
         done;
-        
+
         ## The following two dirs are only adding or removing files, never modifying. So we can use the faster --size-only stradegy
         for dir in {custom-tools,shed_tools}; do
-        
+
             if [ -d $dir ]; then
                 echo "Syncing $dir"
                 rsync -avr \
