@@ -41,7 +41,3 @@ cvmfs_check_servers:
     - galaxy.jrc.ec.europa.eu:8008
     - cvmfs1-ufr0.galaxyproject.eu
     - cvmfs-s1-galaxy.computecanada.ca:8000
-
-ssh_selinux_packages:
-  - policycoreutils-python-utils
-  - checkpolicy
