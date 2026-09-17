@@ -65,6 +65,7 @@ roles:
   - name: galaxyproject.proftpd
     version: 0.3.3
   - name: usegalaxy_eu.ansible_nginx_upload_module
+    src: https://github.com/usegalaxy-eu/ansible-nginx-upload-module
     version: 1.1.0
   - name: usegalaxy-eu.nginx
     src: https://github.com/usegalaxy-eu/ansible-nginx
@@ -85,6 +86,7 @@ roles:
   - name: geerlingguy.jenkins
     version: 5.3.1
   - name: geerlingguy.repo-epel
+    src: https://github.com/geerlingguy/ansible-role-repo-epel
     version: 3.1.2
   - name: influxdata.chrony
     src: https://github.com/usegalaxy-eu/ansible-chrony
