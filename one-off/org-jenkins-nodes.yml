@@ -44,5 +44,5 @@
     - hxr.admin-tools
     - hxr.monitor-email
     - influxdata.chrony
-    - dev-sec.os-hardening
-    - dev-sec.ssh-hardening
+    - devsec.hardening.os_hardening
+    - devsec.hardening.ssh_hardening

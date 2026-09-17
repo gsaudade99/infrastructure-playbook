@@ -170,3 +170,30 @@ telegraf_plugins_extra:
     plugin: prometheus
     config:
       - urls = ["http://172.17.0.2:15692/metrics"]
+
+# galaxyproject.nginx >= 1.0.0 changed its SSL defaults (profile-based);
+# these pin the values the 0.6.4 role previously deployed so the effective
+# nginx SSL configuration is unchanged.
+nginx_conf_ssl_ciphers:
+  - ECDHE-ECDSA-AES128-GCM-SHA256
+  - ECDHE-ECDSA-AES256-GCM-SHA384
+  - ECDHE-ECDSA-AES128-SHA
+  - ECDHE-ECDSA-AES256-SHA
+  - ECDHE-ECDSA-AES128-SHA256
+  - ECDHE-ECDSA-AES256-SHA384
+  - ECDHE-RSA-AES128-GCM-SHA256
+  - ECDHE-RSA-AES256-GCM-SHA384
+  - ECDHE-RSA-AES128-SHA
+  - ECDHE-RSA-AES256-SHA
+  - ECDHE-RSA-AES128-SHA256
+  - ECDHE-RSA-AES256-SHA384
+  - DHE-RSA-AES128-GCM-SHA256
+  - DHE-RSA-AES256-GCM-SHA384
+  - DHE-RSA-AES128-SHA
+  - DHE-RSA-AES256-SHA
+  - DHE-RSA-AES128-SHA256
+  - DHE-RSA-AES256-SHA256
+nginx_conf_ssl_dhparam: "{{ nginx_ssl_conf_dir }}/dhparams.pem"
+nginx_conf_ssl_prefer_server_ciphers: "on"
+nginx_conf_ssl_session_cache: shared:SSL:8m
+nginx_conf_ssl_session_timeout: 5m

@@ -28,6 +28,9 @@ handy_groups:
 # Role: galaxyproject.miniconda
 conda_prefix_dir: '/opt/miniconda'
 miniconda_prefix: '{{ conda_prefix_dir }}'
+# galaxyproject.miniconda >= 0.3.2 defaults to the miniforge distribution;
+# keep installing Miniconda as before.
+miniconda_distribution: miniconda
 galaxy_conda_create_env: true
 galaxy_conda_env_packages:
   - python=3.11
