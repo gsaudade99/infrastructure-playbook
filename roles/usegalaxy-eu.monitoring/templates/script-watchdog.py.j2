@@ -1,0 +1,211 @@
+#!/usr/bin/env python3
+"""Passively monitor a child command and expose its state to Telegraf."""
+
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+import tempfile
+import time
+from pathlib import Path
+
+
+def process_state(pid):
+    """Return the Linux process state from /proc, or None once it is gone."""
+    try:
+        stat = Path(f"/proc/{pid}/stat").read_text()
+    except FileNotFoundError:
+        return None
+    except OSError as error:
+        print(f"Unable to read /proc/{pid}/stat: {error}", file=sys.stderr)
+        return None
+
+    # The command name is enclosed in parentheses and may itself contain spaces.
+    fields = stat[stat.rfind(")") + 2 :].split()
+    return fields[0] if fields else None
+
+
+def safe_filename(name):
+    return re.sub(r"[^A-Za-z0-9_.-]+", "_", name).strip("._") or "watchdog"
+
+
+def write_state(state_dir, name, state):
+    state_dir.mkdir(parents=True, exist_ok=True)
+    destination = state_dir / f"{safe_filename(name)}.json"
+    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{destination.name}.", dir=state_dir)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as output:
+            json.dump(state, output, sort_keys=True)
+            output.write("\n")
+        os.chmod(temporary_name, 0o644)
+        os.replace(temporary_name, destination)
+    finally:
+        try:
+            os.unlink(temporary_name)
+        except FileNotFoundError:
+            pass
+
+
+def severity(process_status, d_state_seconds, warning_seconds, critical_seconds):
+    if process_status != "D":
+        return 0
+    if d_state_seconds >= critical_seconds:
+        return 2
+    if d_state_seconds >= warning_seconds:
+        return 1
+    return 0
+
+
+def run(arguments):
+    started_at = time.time()
+    state_dir = Path(arguments.state_dir)
+    command = arguments.command
+
+    try:
+        child = subprocess.Popen(command)
+    except OSError as error:
+        write_state(
+            state_dir,
+            arguments.name,
+            {
+                "name": arguments.name,
+                "state": "exited",
+                "running": False,
+                "exit_code": 127,
+                "error": str(error),
+                "started_at": started_at,
+                "updated_at": time.time(),
+                "elapsed_seconds": 0,
+                "d_state_seconds": 0,
+                "severity": 3,
+            },
+        )
+        print(f"Unable to start {command[0]}: {error}", file=sys.stderr)
+        return 127
+
+    d_started_at = None
+    while True:
+        now = time.time()
+        current_state = process_state(child.pid)
+        if current_state == "D":
+            if d_started_at is None:
+                d_started_at = now
+            d_state_seconds = int(now - d_started_at)
+        else:
+            d_started_at = None
+            d_state_seconds = 0
+
+        write_state(
+            state_dir,
+            arguments.name,
+            {
+                "name": arguments.name,
+                "pid": child.pid,
+                "state": (current_state or "unknown").lower(),
+                "running": True,
+                "started_at": started_at,
+                "updated_at": now,
+                "elapsed_seconds": int(now - started_at),
+                "d_state_seconds": d_state_seconds,
+                "severity": severity(
+                    current_state,
+                    d_state_seconds,
+                    arguments.warning_d_seconds,
+                    arguments.critical_d_seconds,
+                ),
+            },
+        )
+        try:
+            exit_code = child.wait(timeout=arguments.interval)
+            break
+        except subprocess.TimeoutExpired:
+            pass
+
+    exited_at = time.time()
+    write_state(
+        state_dir,
+        arguments.name,
+        {
+            "name": arguments.name,
+            "pid": child.pid,
+            "state": "exited",
+            "running": False,
+            "exit_code": exit_code,
+            "started_at": started_at,
+            "updated_at": exited_at,
+            "elapsed_seconds": int(exited_at - started_at),
+            "d_state_seconds": 0,
+            "severity": 0 if exit_code == 0 else 3,
+        },
+    )
+    return exit_code
+
+
+def escape_tag(value):
+    return str(value).replace("\\", "\\\\").replace(",", "\\,").replace("=", "\\=").replace(" ", "\\ ")
+
+
+def report(arguments):
+    state_dir = Path(arguments.state_dir)
+    if not state_dir.exists():
+        return 0
+
+    now = time.time()
+    for path in sorted(state_dir.glob("*.json")):
+        try:
+            state = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            print(f"Unable to read watchdog state {path}: {error}", file=sys.stderr)
+            continue
+
+        tags = f"name={escape_tag(state.get('name', path.stem))},state={escape_tag(state.get('state', 'unknown'))}"
+        fields = {
+            "running": int(bool(state.get("running", False))),
+            "severity": int(state.get("severity", 0)),
+            "elapsed_seconds": int(state.get("elapsed_seconds", 0)),
+            "d_state_seconds": int(state.get("d_state_seconds", 0)),
+            "state_age_seconds": max(0, int(now - state.get("updated_at", now))),
+        }
+        for optional_field in ("pid", "exit_code"):
+            if optional_field in state:
+                fields[optional_field] = int(state[optional_field])
+        line_fields = ",".join(f"{key}={value}i" for key, value in fields.items())
+        print(f"script_watchdog,{tags} {line_fields}")
+    return 0
+
+
+def parser():
+    command_parser = argparse.ArgumentParser(description=__doc__)
+    subcommands = command_parser.add_subparsers(dest="subcommand", required=True)
+
+    run_parser = subcommands.add_parser("run", help="run and passively observe a command")
+    run_parser.add_argument("--name", required=True, help="metric and state-file name")
+    run_parser.add_argument("--state-dir", default="/run/script-watchdog")
+    run_parser.add_argument("--interval", type=float, default=10.0)
+    run_parser.add_argument("--warning-d-seconds", type=int, default=60)
+    run_parser.add_argument("--critical-d-seconds", type=int, default=300)
+    run_parser.add_argument("command", nargs=argparse.REMAINDER)
+
+    report_parser = subcommands.add_parser("report", help="emit all local state as Influx line protocol")
+    report_parser.add_argument("--state-dir", default="/run/script-watchdog")
+    return command_parser
+
+
+def main():
+    arguments = parser().parse_args()
+    if arguments.subcommand == "run":
+        if not arguments.command or arguments.command[0] != "--" or len(arguments.command) == 1:
+            parser().error("run requires a command after --")
+        arguments.command = arguments.command[1:]
+        if arguments.interval <= 0:
+            parser().error("--interval must be greater than zero")
+        if arguments.warning_d_seconds < 0 or arguments.critical_d_seconds < arguments.warning_d_seconds:
+            parser().error("D-state thresholds must be non-negative and ordered")
+        return run(arguments)
+    return report(arguments)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

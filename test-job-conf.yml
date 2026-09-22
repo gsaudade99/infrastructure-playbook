@@ -1,0 +1,66 @@
+---
+- name: Render and validate Galaxy job configuration
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - templates/galaxy/config/job_conf.yml
+  vars:
+    galaxy_config_dir: /tmp/galaxy/config
+    galaxy_systemd_handlers: 6
+    galaxy_systemd_handler_prefix: handler_sn09
+    job_conf_test_output: /tmp/galaxy-job_conf.test.yml
+
+    # Dummy values keep this test self-contained and prevent it from reading vault data.
+    rabbitmq_password_galaxy_it01: test-password
+    rabbitmq_password_galaxy_mira_pulsar: test-password
+    rabbitmq_password_galaxy_sk01: test-password
+    rabbitmq_password_galaxy_it02: test-password
+    rabbitmq_password_galaxy_it03: test-password
+    rabbitmq_password_galaxy_pt01: test-password
+    rabbitmq_password_galaxy_be01: test-password
+    rabbitmq_password_galaxy_uk01: test-password
+    rabbitmq_password_galaxy_fr01: test-password
+    rabbitmq_password_galaxy_fi01: test-password
+    rabbitmq_password_galaxy_no01: test-password
+    rabbitmq_password_galaxy_es01: test-password
+    rabbitmq_password_galaxy_cz01: test-password
+    rabbitmq_password_galaxy_egi01: test-password
+    rabbitmq_password_galaxy_bsc01: test-password
+    rabbitmq_password_galaxy_tubitak01: test-password
+    rabbitmq_password_galaxy_cyf01: test-password
+    rabbitmq_password_galaxy_hcmr01: test-password
+    rabbitmq_password_galaxy_eosc01: test-password
+    rabbitmq_password_galaxy_uca01: test-password
+    rabbitmq_password_galaxy_ufz_eve01: test-password
+    pulsar_nemo_relay_url: https://pulsar.example.test
+    pulsar_nemo_relay_username: test-user
+    pulsar_nemo_relay_password: test-password
+
+  tasks:
+    - name: Render job_conf.yml
+      ansible.builtin.template:
+        src: templates/galaxy/config/job_conf.yml.j2
+        dest: "{{ job_conf_test_output }}"
+        mode: "0600"
+
+    - name: Read rendered job configuration
+      ansible.builtin.slurp:
+        src: "{{ job_conf_test_output }}"
+      register: rendered_job_conf_file
+
+    - name: Parse rendered job configuration
+      ansible.builtin.set_fact:
+        rendered_job_conf: "{{ rendered_job_conf_file.content | b64decode | from_yaml }}"
+
+    - name: Verify the APIV2 runner and dedicated handler
+      ansible.builtin.assert:
+        that:
+          - rendered_job_conf.runners.htcondor_apiv2.load == 'galaxy.jobs.runners.htcondor:HTCondorJobRunner'
+          - rendered_job_conf.handling.assign == ['db-skip-locked']
+          - rendered_job_conf.handling.processes.handler_sn09_0.tags == ['htcondor-apiv2']
+          - rendered_job_conf.handling.processes.handler_sn09_0.plugins == ['htcondor_apiv2']
+          - "'tags' not in rendered_job_conf.handling.processes.handler_sn09_1"
+          - "'htcondor_apiv2' not in rendered_job_conf.handling.processes.handler_sn09_1.plugins"
+        fail_msg: The rendered job configuration does not isolate the APIV2 runner to handler_sn09_0.
+        success_msg: The APIV2 runner is isolated to the tagged handler_sn09_0 process.
