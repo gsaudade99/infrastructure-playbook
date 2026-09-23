@@ -7,23 +7,12 @@ set -euo pipefail
 WATCHDOG_STATE_DIR="{{ script_watchdog_state_dir }}"
 
 # A second scheduled cleanup must not overlap one that is still blocked on I/O.
+mkdir -p "${WATCHDOG_STATE_DIR}"
 exec 9>"${WATCHDOG_STATE_DIR}/galaxy-cleanup.lock"
 if ! flock -n 9; then
     echo "Galaxy cleanup is already running; skipping overlapping invocation" >&2
     exit 0
 fi
-
-run_cleanup() {
-    local name="$1"
-    shift
-    /usr/bin/script-watchdog run \
-        --name "${name}" \
-        --state-dir "${WATCHDOG_STATE_DIR}" \
-        --interval "{{ script_watchdog_interval }}" \
-        --warning-d-seconds "{{ script_watchdog_warning_d_seconds }}" \
-        --critical-d-seconds "{{ script_watchdog_critical_d_seconds }}" \
-        -- "$@"
-}
 
 run_timestamp="$(date --rfc-3339=seconds)"
 
@@ -39,8 +28,7 @@ run_timestamp="$(date --rfc-3339=seconds)"
 
 {% for objectstore_id, config in galaxy_cleanup_scratchstorage.items() %}
 # Stage 1: Purge old HDAs at day 60 for our Scratch storage - short term storage
-run_cleanup "galaxy-cleanup-purge-old-hdas-{{ objectstore_id }}" \
-    "{{ galaxy_venv_dir }}/bin/python" "{{ galaxy_server_dir }}/scripts/cleanup_datasets/pgcleanup.py" \
+"{{ galaxy_venv_dir }}/bin/python" "{{ galaxy_server_dir }}/scripts/cleanup_datasets/pgcleanup.py" \
     -c "{{ galaxy_config_file }}" -U -b 5000 -o "{{ config.days | int }}" \
     -l "{{ galaxy_log_dir }}" -w 128MB --object-store-id "{{ objectstore_id }}" purge_old_hdas \
     >> "{{ galaxy_log_dir }}/cleanup-${run_timestamp}-purgeOldHdas.log" \
@@ -49,8 +37,7 @@ run_cleanup "galaxy-cleanup-purge-old-hdas-{{ objectstore_id }}" \
 
 # Stage 2: Galaxy Default Cleanup
 for action in delete_userless_histories delete_exported_histories purge_deleted_users purge_deleted_histories purge_error_hdas purge_deleted_hdas purge_historyless_hdas purge_hdas_of_purged_histories delete_datasets purge_datasets; do
-    run_cleanup "galaxy-cleanup-${action}" \
-        "{{ galaxy_venv_dir }}/bin/python" \
+    "{{ galaxy_venv_dir }}/bin/python" \
         "{{ galaxy_server_dir }}/scripts/cleanup_datasets/pgcleanup.py" \
         -c "{{ galaxy_config_file }}" \
         -U \

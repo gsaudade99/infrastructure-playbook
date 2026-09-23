@@ -19,7 +19,15 @@
 - name: Schedule Galaxy cleanup objectstore script
   ansible.builtin.cron:
     name: "Galaxy cleanup scratch"
-    job: "/usr/local/bin/cleanup_storage.sh"
+    job: >-
+      /usr/bin/script-watchdog run
+      --name "{{ script_watchdog_cleanup_name }}"
+      --state-dir "{{ script_watchdog_state_dir }}"
+      --interval "{{ script_watchdog_interval }}"
+      --warning-d-seconds "{{ script_watchdog_warning_d_seconds }}"
+      --critical-d-seconds "{{ script_watchdog_critical_d_seconds }}"
+      -- /usr/local/bin/cleanup_storage.sh
+      >> "{{ galaxy_cleanup_log_dir }}/cleanup-watchdog.log" 2>&1
     minute: "{{ galaxy_cleanup_minute }}"
     hour: "{{ galaxy_cleanup_hour }}"
     user: "{{ galaxy_user.name }}"

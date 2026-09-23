@@ -9,3 +9,4 @@ script_watchdog_interval: 10
 script_watchdog_warning_d_seconds: 180
 script_watchdog_critical_d_seconds: 600
 script_watchdog_telegraf_interval: "30s"
+script_watchdog_report_names: []
