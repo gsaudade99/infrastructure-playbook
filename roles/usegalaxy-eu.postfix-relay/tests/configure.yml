@@ -1,0 +1,34 @@
+---
+# Use only on a disposable Debian 12, EL 9 or Rocky 10 host/container.
+- name: Configure a disposable mail relay fixture
+  hosts: all
+  vars:
+    postfix_relay_hostname: relay.example.org
+    postfix_relay_bounce_address: bounces@example.org
+    postfix_relay_envelope_senders: [sender@example.org]
+    postfix_relay_imap_port: 1143
+    postfix_relay_imap_password_hash: '{PLAIN}integration-password'
+    postfix_relay_accounts:
+      - name: first
+        host: smtp.example.org
+        port: 587
+        username: first
+        password: fake-first
+        rate_delay: 2
+        weight: 1
+      - name: second
+        host: smtp.example.org
+        port: 587
+        username: second
+        password: fake-second
+        rate_delay: 2
+        weight: 1
+      - name: third
+        host: smtp.other.example.org
+        port: 587
+        username: third
+        password: fake-third
+        rate_delay: 2
+        weight: 1
+  roles:
+    - usegalaxy-eu.postfix-relay

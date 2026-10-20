@@ -1,0 +1,4 @@
+# {{ ansible_managed }}
+{% for sender in postfix_relay_envelope_senders %}
+{{ sender }} {{ postfix_relay_bounce_address }}
+{% endfor %}

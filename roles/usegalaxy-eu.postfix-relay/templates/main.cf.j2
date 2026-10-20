@@ -1,0 +1,49 @@
+# {{ ansible_managed }}
+# This role owns main.cf on a dedicated relay host.
+myhostname = {{ postfix_relay_hostname }}
+myorigin = $myhostname
+{% if ansible_os_family == 'RedHat' %}
+# Rocky 10 no longer includes the legacy Berkeley DB hash backend.
+default_database_type = lmdb
+alias_maps = lmdb:/etc/aliases
+alias_database = lmdb:/etc/aliases
+{% endif %}
+mydestination = $myhostname, localhost
+inet_interfaces = {{ postfix_relay_interfaces | join(', ') }}
+inet_protocols = ipv4
+mynetworks = {{ postfix_relay_trusted_networks | join(', ') }}
+smtpd_relay_restrictions = permit_mynetworks, check_recipient_access texthash:/etc/postfix/galaxy-bounce-access, reject_unauth_destination
+smtpd_recipient_restrictions = reject_unlisted_recipient
+disable_vrfy_command = yes
+relay_domains =
+relayhost =
+# Fail closed if randomized selection unexpectedly produces no result.
+default_transport = retry:4.3.0 No Galaxy upstream transport selected
+sender_dependent_default_transport_maps = randmap:{% raw %}{{% endraw %}
+{% for account in postfix_relay_accounts %}
+{% for copy in range(account.weight | int) %}
+    galaxy_{{ account.name }}:[{{ account.host }}]:{{ account.port }}
+{% endfor %}
+{% endfor %}
+    }
+smtp_sasl_auth_enable = yes
+smtp_sasl_security_options = noanonymous
+smtp_sasl_tls_security_options = noanonymous
+smtp_tls_security_level = secure
+smtp_tls_CAfile = {{ '/etc/ssl/certs/ca-certificates.crt' if ansible_os_family == 'Debian' else '/etc/pki/tls/certs/ca-bundle.crt' }}
+smtp_tls_loglevel = 1
+smtp_connection_cache_on_demand = no
+{% for account in postfix_relay_accounts %}
+# qmgr settings belong in main.cf, not SMTP process overrides in master.cf.
+galaxy_{{ account.name }}_transport_rate_delay = {{ account.rate_delay | int }}s
+galaxy_{{ account.name }}_destination_recipient_limit = 1
+{% endfor %}
+sender_canonical_classes = envelope_sender
+sender_canonical_maps = texthash:/etc/postfix/galaxy-sender-canonical
+virtual_alias_maps = texthash:/etc/postfix/galaxy-virtual
+home_mailbox = Maildir/
+recipient_delimiter = +
+message_size_limit = {{ postfix_relay_message_size_limit | int }}
+maximal_queue_lifetime = {{ postfix_relay_queue_lifetime }}
+bounce_queue_lifetime = {{ postfix_relay_queue_lifetime }}
+enable_long_queue_ids = yes

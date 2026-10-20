@@ -1,0 +1,56 @@
+---
+- name: Validate relay configuration
+  ansible.builtin.import_tasks: validate.yml
+
+- name: Install mail relay packages
+  ansible.builtin.package:
+    name: "{{ postfix_relay_packages[ansible_os_family] }}"
+    state: present
+  vars:
+    postfix_relay_packages:
+      Debian:
+        - postfix
+        - libsasl2-modules
+        - ca-certificates
+        - dovecot-imapd
+        - rsyslog
+        - logrotate
+        - python3
+      RedHat:
+        - postfix
+        - postfix-lmdb
+        - cyrus-sasl-plain
+        - ca-certificates
+        - dovecot
+        - rsyslog
+        - logrotate
+        - python3
+
+- name: Configure Postfix
+  ansible.builtin.import_tasks: postfix.yml
+
+- name: Configure the bounce mailbox
+  ansible.builtin.import_tasks: mailbox.yml
+
+- name: Configure mail logging and monitoring
+  ansible.builtin.import_tasks: monitoring.yml
+
+- name: Configure SELinux for the dedicated relay
+  ansible.builtin.import_tasks: selinux.yml
+  when:
+    - ansible_os_family == 'RedHat'
+    - ansible_selinux.status | default('disabled') == 'enabled'
+
+- name: Apply validated configuration before enabling services
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable mail services
+  ansible.builtin.service:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop:
+    - postfix
+    - dovecot
+    - rsyslog
+  when: postfix_relay_manage_services | bool

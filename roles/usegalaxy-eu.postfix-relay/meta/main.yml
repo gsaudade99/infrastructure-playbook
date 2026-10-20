@@ -1,0 +1,15 @@
+---
+galaxy_info:
+  author: Galaxy Europe
+  description: Dedicated satellite mail relay with isolated upstream accounts and a bounce mailbox
+  license: MIT
+  min_ansible_version: '2.15'
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+    - name: EL
+      versions:
+        - '9'
+        - '10'
+dependencies: []

@@ -1,0 +1,46 @@
+---
+- name: Install SELinux management bindings
+  ansible.builtin.package:
+    name:
+      - policycoreutils-python-utils
+      - python3-libselinux
+    state: present
+
+- name: Label the nonstandard mailbox home persistently
+  community.general.sefcontext:
+    target: "{{ postfix_relay_bounce_home }}"
+    setype: user_home_dir_t
+    state: present
+
+- name: Label the bounce Maildir persistently
+  community.general.sefcontext:
+    target: "{{ postfix_relay_bounce_home }}/Maildir(/.*)?"
+    setype: mail_home_rw_t
+    state: present
+
+- name: Allow Dovecot to bind the configured IMAP port
+  community.general.seport:
+    ports: "{{ postfix_relay_imap_port | int }}"
+    proto: tcp
+    setype: pop_port_t
+    state: present
+
+- name: Allow Postfix to connect to configured upstream submission ports
+  community.general.seport:
+    ports: "{{ item }}"
+    proto: tcp
+    setype: smtp_port_t
+    state: present
+  loop: "{{ postfix_relay_accounts | map(attribute='port') | map('int') | unique | list }}"
+
+- name: Apply SELinux labels to the mailbox and managed mail configuration
+  ansible.builtin.command:
+    argv:
+      - restorecon
+      - -RFv
+      - "{{ postfix_relay_bounce_home }}"
+      - /etc/postfix
+      - /etc/dovecot
+  register: postfix_relay_restorecon
+  changed_when: postfix_relay_restorecon.stdout | length > 0
+  when: not ansible_check_mode

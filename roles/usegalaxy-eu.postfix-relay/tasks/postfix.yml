@@ -1,0 +1,100 @@
+---
+- name: Check available Postfix lookup types
+  ansible.builtin.command: postconf -m
+  register: postfix_relay_map_types
+  changed_when: false
+  check_mode: false
+  when: not ansible_check_mode
+
+- name: Require random lookup support
+  ansible.builtin.assert:
+    that:
+      - "'randmap' in postfix_relay_map_types.stdout_lines"
+      - "'texthash' in postfix_relay_map_types.stdout_lines"
+  when: not ansible_check_mode
+
+- name: Read chroot settings for services that access relay lookup files
+  ansible.builtin.command: "postconf -h -F {{ item }}/chroot"
+  loop:
+    - smtp/inet
+    - cleanup/unix
+    - rewrite/unix
+  register: postfix_relay_chroot_settings
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Allow lookup services to access host configuration files
+  ansible.builtin.command:
+    argv:
+      - postconf
+      - -F
+      - "{{ item.item }}/chroot=n"
+  loop: "{{ postfix_relay_chroot_settings.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when:
+    - not ansible_check_mode
+    - item.stdout | default('n') != 'n'
+  changed_when: true
+  notify: Validate and restart Postfix
+
+- name: Check transport-wide pacing support
+  ansible.builtin.command: postconf -d default_transport_rate_delay
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Install private upstream credential tables
+  ansible.builtin.template:
+    src: sasl_passwd.j2
+    dest: "/etc/postfix/galaxy-sasl-{{ item.name }}"
+    owner: root
+    group: root
+    mode: '0600'
+  loop: "{{ postfix_relay_accounts }}"
+  no_log: true
+  diff: false
+  notify: Validate and restart Postfix
+
+- name: Install envelope sender mappings
+  ansible.builtin.template:
+    src: sender_canonical.j2
+    dest: /etc/postfix/galaxy-sender-canonical
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Validate and restart Postfix
+
+- name: Install bounce recipient mappings
+  ansible.builtin.template:
+    src: virtual.j2
+    dest: /etc/postfix/galaxy-virtual
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Validate and restart Postfix
+
+- name: Configure the dedicated Postfix relay
+  ansible.builtin.template:
+    src: main.cf.j2
+    dest: /etc/postfix/main.cf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Validate and restart Postfix
+
+- name: Allow inbound delivery only to the public bounce address
+  ansible.builtin.copy:
+    dest: /etc/postfix/galaxy-bounce-access
+    content: "{{ postfix_relay_bounce_address }} OK\n"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Validate and restart Postfix
+
+- name: Configure isolated outbound transports
+  ansible.builtin.blockinfile:
+    path: /etc/postfix/master.cf
+    marker: '# {mark} Galaxy outbound transports'
+    block: "{{ lookup('template', 'transports.j2') }}"
+  no_log: true
+  notify: Validate and restart Postfix

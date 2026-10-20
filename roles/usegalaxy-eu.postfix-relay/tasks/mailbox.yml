@@ -1,0 +1,59 @@
+---
+- name: Check Dovecot version
+  ansible.builtin.command: dovecot --version
+  register: postfix_relay_dovecot_version
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Require the supported Dovecot configuration format
+  ansible.builtin.assert:
+    that: postfix_relay_dovecot_version.stdout is match('^2[.]3[.]')
+    fail_msg: This role supports Dovecot 2.3 (Debian 12, EL 9 or Rocky 10); Dovecot 2.4 uses a different configuration format.
+  when: not ansible_check_mode
+
+- name: Create the bounce mailbox group
+  ansible.builtin.group:
+    name: "{{ postfix_relay_bounce_user }}"
+    system: true
+
+- name: Create a locked bounce mailbox user
+  ansible.builtin.user:
+    name: "{{ postfix_relay_bounce_user }}"
+    group: "{{ postfix_relay_bounce_user }}"
+    home: "{{ postfix_relay_bounce_home }}"
+    shell: /sbin/nologin
+    system: true
+    password_lock: true
+
+- name: Create the private Maildir
+  ansible.builtin.file:
+    path: "{{ postfix_relay_bounce_home }}/{{ item }}"
+    state: directory
+    owner: "{{ postfix_relay_bounce_user }}"
+    group: "{{ postfix_relay_bounce_user }}"
+    mode: '0700'
+  loop:
+    - Maildir
+    - Maildir/cur
+    - Maildir/new
+    - Maildir/tmp
+
+- name: Install the dedicated IMAP authentication file
+  ansible.builtin.template:
+    src: dovecot-users.j2
+    dest: /etc/dovecot/galaxy-users
+    owner: root
+    group: dovecot
+    mode: '0640'
+  no_log: true
+  diff: false
+  notify: Validate and restart Dovecot
+
+- name: Configure loopback-only IMAP for the bounce mailbox
+  ansible.builtin.template:
+    src: dovecot.conf.j2
+    dest: /etc/dovecot/dovecot.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Validate and restart Dovecot

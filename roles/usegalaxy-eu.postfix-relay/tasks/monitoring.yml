@@ -1,0 +1,50 @@
+---
+- name: Retain dedicated mail logs
+  ansible.builtin.copy:
+    dest: /etc/rsyslog.d/30-galaxy-mail.conf
+    content: |
+      # Ansible managed. Keep the normal distribution mail logs as well.
+      mail.* action(type="omfile" file="/var/log/galaxy-mail.log" fileCreateMode="0640")
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Validate and restart rsyslog
+
+- name: Rotate dedicated mail logs
+  ansible.builtin.template:
+    src: logrotate.j2
+    dest: /etc/logrotate.d/galaxy-mail
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Install queue metrics command
+  ansible.builtin.copy:
+    src: galaxy-mail-metrics.py
+    dest: /usr/local/bin/galaxy-mail-metrics
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Configure optional Telegraf queue monitoring
+  ansible.builtin.copy:
+    dest: /etc/telegraf/telegraf.d/galaxy-mail.conf
+    content: |
+      # Ansible managed. Requires an existing Telegraf installation.
+      [[inputs.exec]]
+        commands = ["/usr/local/bin/galaxy-mail-metrics"]
+        timeout = "10s"
+        interval = "60s"
+        data_format = "influx"
+    owner: root
+    group: root
+    mode: '0644'
+  when: postfix_relay_telegraf_enabled | bool
+  notify: Restart mail relay Telegraf
+
+- name: Remove disabled Telegraf queue monitoring
+  ansible.builtin.file:
+    path: /etc/telegraf/telegraf.d/galaxy-mail.conf
+    state: absent
+  when: not postfix_relay_telegraf_enabled | bool
+  notify: Restart mail relay Telegraf

@@ -1,0 +1,26 @@
+# {{ ansible_managed }}
+# Dedicated Dovecot 2.3 instance. Remote readers must use an SSH tunnel.
+protocols = imap
+listen = 127.0.0.1
+ssl = no
+disable_plaintext_auth = yes
+auth_mechanisms = plain login
+mail_location = maildir:{{ postfix_relay_bounce_home }}/Maildir
+first_valid_uid = 1
+passdb {
+  driver = passwd-file
+  args = /etc/dovecot/galaxy-users
+}
+userdb {
+  driver = static
+  args = uid={{ postfix_relay_bounce_user }} gid={{ postfix_relay_bounce_user }} home={{ postfix_relay_bounce_home }}
+}
+service imap-login {
+  inet_listener imap {
+    address = 127.0.0.1
+    port = {{ postfix_relay_imap_port | int }}
+  }
+  inet_listener imaps {
+    port = 0
+  }
+}

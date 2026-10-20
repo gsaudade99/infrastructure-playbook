@@ -1,0 +1,25 @@
+---
+postfix_relay_hostname: "{{ ansible_fqdn }}"
+# Bind only to loopback until the Galaxy clients have been explicitly selected.
+postfix_relay_interfaces:
+  - 127.0.0.1
+postfix_relay_trusted_networks:
+  - 127.0.0.0/8
+postfix_relay_accounts: []
+# Each account: name, host, port, username, password, rate_delay (seconds), weight.
+# Credentials belong in Vault or another secret store supplied by the caller.
+postfix_relay_bounce_address: ""
+postfix_relay_bounce_user: galaxy-bounces
+postfix_relay_bounce_home: /var/lib/galaxy-bounces
+# A Dovecot password hash, e.g. generated with `doveadm pw -s SHA512-CRYPT`.
+postfix_relay_imap_password_hash: ""
+postfix_relay_imap_port: 143
+# Optional exact envelope-sender addresses to rewrite to the bounce address.
+# Visible From and Reply-To headers are preserved. Other senders are unchanged.
+postfix_relay_envelope_senders: []
+postfix_relay_queue_lifetime: 10d
+postfix_relay_message_size_limit: 10485760
+postfix_relay_log_retention_days: 180
+postfix_relay_telegraf_enabled: false
+# Disable only for image-building/configuration validation without an init system.
+postfix_relay_manage_services: true

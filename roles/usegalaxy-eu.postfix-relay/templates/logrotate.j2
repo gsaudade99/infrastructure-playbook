@@ -1,0 +1,13 @@
+/var/log/galaxy-mail.log {
+    daily
+    rotate {{ postfix_relay_log_retention_days | int }}
+    missingok
+    notifempty
+    compress
+    delaycompress
+    create 0640 root root
+    sharedscripts
+    postrotate
+        /bin/systemctl kill -s HUP --kill-who=main rsyslog.service
+    endscript
+}
