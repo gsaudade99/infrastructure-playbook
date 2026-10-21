@@ -815,21 +815,23 @@ base_app_main: &BASE_APP_MAIN
   # mail through an SMTP server, which you may define here (host:port).
   # Galaxy will automatically try STARTTLS but will continue upon
   # failure.
-  smtp_server: smtp.informatik.uni-freiburg.de
+  # Postfix queues mail and relays it through the university SMTP service.
+  # This hostname must be reachable from Galaxy and its Celery workers.
+  smtp_server: "postfix-relay.bi.privat:25"
 
   # If your SMTP server requires a username and password, you can
   # provide them here (password in cleartext here, but if your server
   # supports STARTTLS it will be sent over the network encrypted).
-  smtp_username: "{{ smtp_username }}"
+  smtp_username: null
 
   # If your SMTP server requires a username and password, you can
   # provide them here (password in cleartext here, but if your server
   # supports STARTTLS it will be sent over the network encrypted).
-  smtp_password: "{{ smtp_password }}"
+  smtp_password: null
 
   # If your SMTP server requires SSL from the beginning of the
   # connection
-  smtp_ssl: true
+  smtp_ssl: false
 
   # On the user registration form, users may choose to join a mailing
   # list. This is the address used to subscribe to the list. Uncomment
