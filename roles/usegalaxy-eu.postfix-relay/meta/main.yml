@@ -1,13 +1,10 @@
 ---
 galaxy_info:
-  author: Galaxy Europe
+  author: gsaudade99 (on behalf of Galaxy Europe)
   description: Paced university SMTP satellite relay with optional local bounce storage
   license: MIT
   min_ansible_version: '2.15'
   platforms:
-    - name: Debian
-      versions:
-        - bookworm
     - name: EL
       versions:
         - '9'

@@ -4,25 +4,15 @@
 
 - name: Install mail relay packages
   ansible.builtin.package:
-    name: "{{ postfix_relay_packages[ansible_os_family] }}"
+    name:
+      - postfix
+      - postfix-lmdb
+      - cyrus-sasl-plain
+      - ca-certificates
+      - rsyslog
+      - logrotate
+      - python3
     state: present
-  vars:
-    postfix_relay_packages:
-      Debian:
-        - postfix
-        - libsasl2-modules
-        - ca-certificates
-        - rsyslog
-        - logrotate
-        - python3
-      RedHat:
-        - postfix
-        - postfix-lmdb
-        - cyrus-sasl-plain
-        - ca-certificates
-        - rsyslog
-        - logrotate
-        - python3
 
 - name: Configure Postfix
   ansible.builtin.import_tasks: postfix.yml

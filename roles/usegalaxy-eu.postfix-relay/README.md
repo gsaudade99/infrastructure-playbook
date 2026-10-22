@@ -2,7 +2,7 @@
 
 Local role addressing [SMTP rate limits (#984)](https://github.com/usegalaxy-eu/issues/issues/984)
 and [user-contact tracking (#1028)](https://github.com/usegalaxy-eu/issues/issues/1028).
-Supported targets: Debian 12, EL 9 and Rocky Linux 10, with Postfix >= 3.1.
+Supported targets: EL 9 and Rocky Linux 10, with Postfix >= 3.1.
 Optional local IMAP storage requires Dovecot 2.3; Dovecot 2.4 is not supported.
 The role owns `main.cf` and, in local bounce mode, `dovecot.conf` on a dedicated host.
 
@@ -182,7 +182,7 @@ messages: changing Galaxy's SMTP endpoint does not move the queue.
 ## Reproducible smoke test
 
 `tests/configure.yml` supplies one fake account and a local bounce mailbox for a
-disposable Debian 12, EL 9 or Rocky 10 target. Apply twice; the second run should
+disposable EL 9 or Rocky 10 target. Apply twice; the second run should
 report `changed=0`. Set `ANSIBLE_ROLES_PATH` to this repository's `roles` directory
 if needed. For containers without init, pass `-e postfix_relay_manage_services=false`
 and start services manually. Configuration validation still runs.
@@ -204,7 +204,7 @@ Postfix on completion and must never run against a production queue.
 
 Container tests do not replace staging tests for real TLS/authentication,
 delivery timing, RZ quota responses, systemd startup or enforcing SELinux.
-Debian 12 and Rocky 10 container tests passed for local and external bounce modes,
+Rocky 10 container tests passed for local and external bounce modes,
 implicit-TLS configuration, repeat-apply idempotence, cross-domain pacing and
 SMTP 451 recovery. Actual university TLS/authentication and restart pacing
 remain staging checks.

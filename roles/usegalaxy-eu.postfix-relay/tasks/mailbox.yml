@@ -1,7 +1,7 @@
 ---
 - name: Install the local IMAP server
   ansible.builtin.package:
-    name: "{{ 'dovecot-imapd' if ansible_os_family == 'Debian' else 'dovecot' }}"
+    name: dovecot
     state: present
 
 - name: Check Dovecot version
@@ -13,7 +13,7 @@
 - name: Require the supported Dovecot configuration format
   ansible.builtin.assert:
     that: postfix_relay_dovecot_version.stdout is match('^2[.]3[.]')
-    fail_msg: This role supports Dovecot 2.3 (Debian 12, EL 9 or Rocky 10); Dovecot 2.4 uses a different configuration format.
+    fail_msg: This role supports Dovecot 2.3 (EL 9 or Rocky 10); Dovecot 2.4 uses a different configuration format.
   when: not ansible_check_mode
 
 - name: Create the bounce mailbox group

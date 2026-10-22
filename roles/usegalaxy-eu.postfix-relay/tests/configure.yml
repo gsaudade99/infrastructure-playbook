@@ -1,5 +1,5 @@
 ---
-# Use only on a disposable Debian 12, EL 9 or Rocky 10 host/container.
+# Use only on a disposable EL 9 or Rocky 10 host/container.
 - name: Configure a disposable mail relay fixture
   hosts: all
   vars:

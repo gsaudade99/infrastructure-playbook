@@ -2,12 +2,10 @@
 # This role owns main.cf on a dedicated relay host.
 myhostname = {{ postfix_relay_hostname }}
 myorigin = $myhostname
-{% if ansible_os_family == 'RedHat' %}
 # Rocky 10 no longer includes the legacy Berkeley DB hash backend.
 default_database_type = lmdb
 alias_maps = lmdb:/etc/aliases
 alias_database = lmdb:/etc/aliases
-{% endif %}
 mydestination = $myhostname, localhost
 inet_interfaces = {{ postfix_relay_interfaces | join(', ') }}
 inet_protocols = ipv4
@@ -27,7 +25,7 @@ smtp_sasl_security_options = noanonymous
 smtp_sasl_tls_security_options = noanonymous
 smtp_tls_security_level = secure
 smtp_tls_wrappermode = {{ 'yes' if postfix_relay_tls_mode == 'implicit' else 'no' }}
-smtp_tls_CAfile = {{ '/etc/ssl/certs/ca-certificates.crt' if ansible_os_family == 'Debian' else '/etc/pki/tls/certs/ca-bundle.crt' }}
+smtp_tls_CAfile = /etc/pki/tls/certs/ca-bundle.crt
 smtp_tls_loglevel = 1
 smtp_connection_cache_on_demand = no
 # Global spacing across the SMTP transport, regardless of recipient or domain.
