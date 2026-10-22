@@ -8,27 +8,12 @@
     postfix_relay_envelope_senders: [sender@example.org]
     postfix_relay_imap_port: 1143
     postfix_relay_imap_password_hash: '{PLAIN}integration-password'
-    postfix_relay_accounts:
-      - name: first
-        host: smtp.example.org
-        port: 587
-        username: first
-        password: fake-first
-        rate_delay: 2
-        weight: 1
-      - name: second
-        host: smtp.example.org
-        port: 587
-        username: second
-        password: fake-second
-        rate_delay: 2
-        weight: 1
-      - name: third
-        host: smtp.other.example.org
-        port: 587
-        username: third
-        password: fake-third
-        rate_delay: 2
-        weight: 1
+    postfix_relay_bounce_mode: local
+    postfix_relay_account:
+      host: smtp.example.org
+      port: 587
+      username: galaxy
+      password: fake-password
+      rate_delay: 6
   roles:
     - usegalaxy-eu.postfix-relay

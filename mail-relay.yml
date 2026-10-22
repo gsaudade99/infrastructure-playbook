@@ -1,0 +1,6 @@
+---
+- name: Configure the Galaxy mail relay
+  hosts: mailrelay
+  become: true
+  roles:
+    - usegalaxy-eu.postfix-relay

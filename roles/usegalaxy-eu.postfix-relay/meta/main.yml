@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   author: Galaxy Europe
-  description: Dedicated satellite mail relay with isolated upstream accounts and a bounce mailbox
+  description: Paced university SMTP satellite relay with optional local bounce storage
   license: MIT
   min_ansible_version: '2.15'
   platforms:

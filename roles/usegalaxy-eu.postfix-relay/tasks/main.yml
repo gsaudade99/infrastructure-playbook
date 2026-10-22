@@ -12,7 +12,6 @@
         - postfix
         - libsasl2-modules
         - ca-certificates
-        - dovecot-imapd
         - rsyslog
         - logrotate
         - python3
@@ -21,7 +20,6 @@
         - postfix-lmdb
         - cyrus-sasl-plain
         - ca-certificates
-        - dovecot
         - rsyslog
         - logrotate
         - python3
@@ -31,6 +29,17 @@
 
 - name: Configure the bounce mailbox
   ansible.builtin.import_tasks: mailbox.yml
+  when: postfix_relay_bounce_mode == 'local'
+
+- name: Stop a previously managed local mailbox when using external bounce storage
+  ansible.builtin.service:
+    name: dovecot
+    enabled: false
+    state: stopped
+  when:
+    - postfix_relay_bounce_mode == 'external'
+    - postfix_relay_manage_services | bool
+    - postfix_relay_previous_local_mailbox.stat.exists
 
 - name: Configure mail logging and monitoring
   ansible.builtin.import_tasks: monitoring.yml
@@ -49,8 +58,5 @@
     name: "{{ item }}"
     enabled: true
     state: started
-  loop:
-    - postfix
-    - dovecot
-    - rsyslog
+  loop: "{{ ['postfix', 'rsyslog'] + (['dovecot'] if postfix_relay_bounce_mode == 'local' else []) }}"
   when: postfix_relay_manage_services | bool

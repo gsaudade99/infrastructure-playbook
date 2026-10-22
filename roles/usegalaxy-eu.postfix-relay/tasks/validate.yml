@@ -8,11 +8,14 @@
         or (ansible_os_family == 'RedHat' and ansible_distribution_major_version == '9')
         or (ansible_distribution == 'Rocky' and ansible_distribution_major_version == '10')
       - postfix_relay_hostname is match('^[A-Za-z0-9][A-Za-z0-9.-]+[.][A-Za-z0-9-]+$')
-      - postfix_relay_accounts | length > 0
-      - postfix_relay_accounts | map(attribute='name') | unique | length == postfix_relay_accounts | length
+      - postfix_relay_account is mapping
+      - postfix_relay_tls_mode in ['starttls', 'implicit']
+      - postfix_relay_bounce_mode in ['local', 'external']
       - postfix_relay_interfaces | length > 0
       - postfix_relay_trusted_networks | length > 0
-      - postfix_relay_bounce_address is match('^[A-Za-z0-9_.+-]+@[A-Za-z0-9.-]+$')
+      - postfix_relay_bounce_address == '' or postfix_relay_bounce_address is match('^[A-Za-z0-9_.+-]+@[A-Za-z0-9.-]+$')
+      - postfix_relay_bounce_mode != 'local' or postfix_relay_bounce_address | length > 0
+      - postfix_relay_envelope_senders | length == 0 or postfix_relay_bounce_address | length > 0
       - postfix_relay_bounce_user is match('^[a-z][a-z0-9-]+$')
       - postfix_relay_bounce_home is match('^/[A-Za-z0-9_/-]+$')
       - postfix_relay_queue_lifetime is match('^[1-9][0-9]*[dhw]$')
@@ -20,22 +23,18 @@
       - postfix_relay_message_size_limit | int > 0
       - postfix_relay_imap_port | int > 0
       - postfix_relay_imap_port | int < 65536
-    fail_msg: Configure the relay accounts, hostname, trusted clients and bounce mailbox before applying this role.
+    fail_msg: Configure the university account, hostname, trusted clients and selected bounce mode before applying this role.
 
 - name: Validate upstream account settings without exposing credentials
   ansible.builtin.assert:
     that:
-      - item.name is match('^[a-z][a-z0-9_]*$')
-      - item.host is match('^[A-Za-z0-9][A-Za-z0-9.-]+$')
-      - item.port | int > 0
-      - item.port | int < 65536
-      - item.username is match('^[^:\s]+$')
-      - item.password | length > 0
-      - item.password is not search('[\r\n]')
-      - item.rate_delay | int > 0
-      - item.weight | int > 0
-      - item.weight | int <= 100
-  loop: "{{ postfix_relay_accounts }}"
+      - postfix_relay_account.host is match('^[A-Za-z0-9][A-Za-z0-9.-]+$')
+      - postfix_relay_account.port | int > 0
+      - postfix_relay_account.port | int < 65536
+      - postfix_relay_account.username is match('^[^:\s]+$')
+      - postfix_relay_account.password | length > 0
+      - postfix_relay_account.password is not search('[\r\n]')
+      - postfix_relay_account.rate_delay | int > 0
   no_log: true
 
 - name: Require a single-line Dovecot password hash
@@ -43,6 +42,7 @@
     that:
       - postfix_relay_imap_password_hash is match('^\{[A-Za-z0-9-]+\}[^:\s]+$')
   no_log: true
+  when: postfix_relay_bounce_mode == 'local'
 
 - name: Validate envelope sender mappings
   ansible.builtin.assert:

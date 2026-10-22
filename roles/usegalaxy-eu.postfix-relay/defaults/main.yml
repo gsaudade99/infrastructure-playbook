@@ -5,9 +5,14 @@ postfix_relay_interfaces:
   - 127.0.0.1
 postfix_relay_trusted_networks:
   - 127.0.0.0/8
-postfix_relay_accounts: []
-# Each account: name, host, port, username, password, rate_delay (seconds), weight.
-# Credentials belong in Vault or another secret store supplied by the caller.
+# One university account: host, port, username, password, rate_delay (seconds).
+# Supply credentials through an external, protected variables file.
+postfix_relay_account: {}
+# STARTTLS (normally port 587) or implicit TLS (normally port 465).
+postfix_relay_tls_mode: starttls
+# External: university-hosted mailbox; local: install Dovecot and a Maildir.
+# This provisions storage only; bounce detection is a separate, planned component.
+postfix_relay_bounce_mode: external
 postfix_relay_bounce_address: ""
 postfix_relay_bounce_user: galaxy-bounces
 postfix_relay_bounce_home: /var/lib/galaxy-bounces

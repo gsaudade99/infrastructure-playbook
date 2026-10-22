@@ -1,4 +1,9 @@
 ---
+- name: Install the local IMAP server
+  ansible.builtin.package:
+    name: "{{ 'dovecot-imapd' if ansible_os_family == 'Debian' else 'dovecot' }}"
+    state: present
+
 - name: Check Dovecot version
   ansible.builtin.command: dovecot --version
   register: postfix_relay_dovecot_version

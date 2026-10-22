@@ -6,10 +6,9 @@
   check_mode: false
   when: not ansible_check_mode
 
-- name: Require random lookup support
+- name: Require text lookup support
   ansible.builtin.assert:
     that:
-      - "'randmap' in postfix_relay_map_types.stdout_lines"
       - "'texthash' in postfix_relay_map_types.stdout_lines"
   when: not ansible_check_mode
 
@@ -43,14 +42,42 @@
   changed_when: false
   when: not ansible_check_mode
 
-- name: Install private upstream credential tables
+- name: Read outbound SMTP process settings
+  ansible.builtin.command: "postconf -h -F smtp/unix/{{ item }}"
+  loop:
+    - process_limit
+    - chroot
+  register: postfix_relay_smtp_settings
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Use a single unchrooted outbound SMTP process
+  ansible.builtin.command:
+    argv:
+      - postconf
+      - -F
+      - "smtp/unix/{{ item.item }}={{ '1' if item.item == 'process_limit' else 'n' }}"
+  loop: "{{ postfix_relay_smtp_settings.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when:
+    - not ansible_check_mode
+    - item.stdout | default('') != ('1' if item.item == 'process_limit' else 'n')
+  changed_when: true
+  notify: Validate and restart Postfix
+
+- name: Check for a previously managed local mailbox
+  ansible.builtin.stat:
+    path: /etc/dovecot/galaxy-users
+  register: postfix_relay_previous_local_mailbox
+
+- name: Install private upstream credential table
   ansible.builtin.template:
     src: sasl_passwd.j2
-    dest: "/etc/postfix/galaxy-sasl-{{ item.name }}"
+    dest: /etc/postfix/galaxy-sasl
     owner: root
     group: root
     mode: '0600'
-  loop: "{{ postfix_relay_accounts }}"
   no_log: true
   diff: false
   notify: Validate and restart Postfix
@@ -72,6 +99,7 @@
     group: root
     mode: '0644'
   notify: Validate and restart Postfix
+  when: postfix_relay_bounce_mode == 'local'
 
 - name: Configure the dedicated Postfix relay
   ansible.builtin.template:
@@ -90,11 +118,27 @@
     group: root
     mode: '0644'
   notify: Validate and restart Postfix
+  when: postfix_relay_bounce_mode == 'local'
 
-- name: Configure isolated outbound transports
+- name: Remove previous randomized outbound transports
   ansible.builtin.blockinfile:
     path: /etc/postfix/master.cf
     marker: '# {mark} Galaxy outbound transports'
-    block: "{{ lookup('template', 'transports.j2') }}"
-  no_log: true
+    state: absent
+  notify: Validate and restart Postfix
+
+- name: Find obsolete per-account credentials from the previous role configuration
+  ansible.builtin.find:
+    paths: /etc/postfix
+    patterns: galaxy-sasl-*
+    file_type: file
+  register: postfix_relay_obsolete_credentials
+
+- name: Remove obsolete per-account credentials
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ postfix_relay_obsolete_credentials.files }}"
+  loop_control:
+    label: "{{ item.path }}"
   notify: Validate and restart Postfix

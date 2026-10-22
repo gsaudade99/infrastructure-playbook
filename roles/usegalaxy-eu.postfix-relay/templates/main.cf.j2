@@ -12,36 +12,35 @@ mydestination = $myhostname, localhost
 inet_interfaces = {{ postfix_relay_interfaces | join(', ') }}
 inet_protocols = ipv4
 mynetworks = {{ postfix_relay_trusted_networks | join(', ') }}
+{% if postfix_relay_bounce_mode == 'local' %}
 smtpd_relay_restrictions = permit_mynetworks, check_recipient_access texthash:/etc/postfix/galaxy-bounce-access, reject_unauth_destination
+{% else %}
+smtpd_relay_restrictions = permit_mynetworks, reject_unauth_destination
+{% endif %}
 smtpd_recipient_restrictions = reject_unlisted_recipient
 disable_vrfy_command = yes
 relay_domains =
-relayhost =
-# Fail closed if randomized selection unexpectedly produces no result.
-default_transport = retry:4.3.0 No Galaxy upstream transport selected
-sender_dependent_default_transport_maps = randmap:{% raw %}{{% endraw %}
-{% for account in postfix_relay_accounts %}
-{% for copy in range(account.weight | int) %}
-    galaxy_{{ account.name }}:[{{ account.host }}]:{{ account.port }}
-{% endfor %}
-{% endfor %}
-    }
+relayhost = [{{ postfix_relay_account.host }}]:{{ postfix_relay_account.port }}
 smtp_sasl_auth_enable = yes
+smtp_sasl_password_maps = texthash:/etc/postfix/galaxy-sasl
 smtp_sasl_security_options = noanonymous
 smtp_sasl_tls_security_options = noanonymous
 smtp_tls_security_level = secure
+smtp_tls_wrappermode = {{ 'yes' if postfix_relay_tls_mode == 'implicit' else 'no' }}
 smtp_tls_CAfile = {{ '/etc/ssl/certs/ca-certificates.crt' if ansible_os_family == 'Debian' else '/etc/pki/tls/certs/ca-bundle.crt' }}
 smtp_tls_loglevel = 1
 smtp_connection_cache_on_demand = no
-{% for account in postfix_relay_accounts %}
-# qmgr settings belong in main.cf, not SMTP process overrides in master.cf.
-galaxy_{{ account.name }}_transport_rate_delay = {{ account.rate_delay | int }}s
-galaxy_{{ account.name }}_destination_recipient_limit = 1
-{% endfor %}
+# Global spacing across the SMTP transport, regardless of recipient or domain.
+smtp_transport_rate_delay = {{ postfix_relay_account.rate_delay | int }}s
+smtp_destination_recipient_limit = 1
 sender_canonical_classes = envelope_sender
 sender_canonical_maps = texthash:/etc/postfix/galaxy-sender-canonical
+{% if postfix_relay_bounce_mode == 'local' %}
 virtual_alias_maps = texthash:/etc/postfix/galaxy-virtual
 home_mailbox = Maildir/
+{% else %}
+virtual_alias_maps =
+{% endif %}
 recipient_delimiter = +
 message_size_limit = {{ postfix_relay_message_size_limit | int }}
 maximal_queue_lifetime = {{ postfix_relay_queue_lifetime }}

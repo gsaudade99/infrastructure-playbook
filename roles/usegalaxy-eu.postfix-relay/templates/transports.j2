@@ -1,5 +1,0 @@
-{% for account in postfix_relay_accounts %}
-galaxy_{{ account.name }} unix - - n - 1 smtp
-  -o syslog_name=postfix/galaxy_{{ account.name }}
-  -o smtp_sasl_password_maps=texthash:/etc/postfix/galaxy-sasl-{{ account.name }}
-{% endfor %}
