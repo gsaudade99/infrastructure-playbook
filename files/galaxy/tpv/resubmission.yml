@@ -40,7 +40,7 @@ destinations:
         execute: |
           from tpv.core.entities import TryNextDestinationOrFail
 
-          scale = int(job.destination_params.get('OOM_MEM_SCALE', OOM_SCALING_FACTOR)) if job.destination_params else 1
+          scale = int((job.destination_params or {}).get('OOM_MEM_SCALE', OOM_SCALING_FACTOR))
           scale_mem = lambda mem: min(mem * scale, OOM_SCALING_CAP)
 
           # Work with a copy: a rejected candidate must not change the next
