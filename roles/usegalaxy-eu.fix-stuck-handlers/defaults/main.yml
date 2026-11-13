@@ -1,15 +1,17 @@
 sleep_duration: 360
+# NOTE: handlers are deliberately NOT restarted nightly. When a handler is
+# restarted, its running jobs are recovered from the database without the
+# TPV resubmit definitions (they only exist in the dynamically-resolved
+# destination of the dispatching handler and are not persisted). Any job
+# that then fails with a resubmittable condition (e.g. an HTCondor memory
+# hold) is failed outright instead of being OOM-resubmitted. See
+# lib/galaxy/jobs/handler.py __recover_job_wrapper() in Galaxy.
 cron_tasks:
   - name: "Call sync-to-nfs"
     minute: 30
     hour: 2
     job: "/usr/bin/galaxy-sync-to-nfs"
     user: galaxy
-  - name: "Restart handlers"
-    minute: 0
-    hour: 3
-    job: "/bin/bash -c 'for (( c=0; c<{{ galaxy_systemd_handlers }}; c++ )); do systemctl restart galaxy-handler@$c && sleep {{ sleep_duration }}; done'"
-    user: root
   - name: "Restart gunicorn"
     minute: 30
     hour: 3
